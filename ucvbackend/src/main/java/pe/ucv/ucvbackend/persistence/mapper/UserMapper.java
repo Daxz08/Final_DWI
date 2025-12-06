@@ -1,43 +1,55 @@
 package pe.ucv.ucvbackend.persistence.mapper;
 
 import pe.ucv.ucvbackend.domain.User;
+import pe.ucv.ucvbackend.domain.Role;
 import pe.ucv.ucvbackend.persistence.entity.Usuario;
+import pe.ucv.ucvbackend.persistence.entity.Rol;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 
-    UserMapper INSTANCE = Mappers.getMapper(UserMapper.class);
+    @Mapping(source = "userId", target = "id")
+    @Mapping(source = "firstName", target = "nombres")
+    @Mapping(source = "lastName", target = "apellidos")
+    @Mapping(source = "email", target = "correo")
+    @Mapping(source = "phone", target = "telefono")
+    @Mapping(source = "passwordHash", target = "contraseñaHash")
+    @Mapping(source = "role", target = "rol", qualifiedByName = "roleToRol")
+    @Mapping(target = "incidencias", ignore = true)
+    Usuario toUsuario(User user);
 
-    // ✅ Entity → Domain (AJUSTADO A TU CLASE USER)
     @Mapping(source = "id", target = "userId")
-    @Mapping(source = "firstname", target = "firstName")
-    @Mapping(source = "lastname", target = "lastName")
-    @Mapping(source = "email", target = "email")
-    @Mapping(source = "phone", target = "phone")
-    @Mapping(source = "nickname", target = "username")
-    @Mapping(source = "password", target = "password")
-    @Mapping(source = "role", target = "userRole")  // ✅ role → userRole
-    @Mapping(source = "cargo", target = "position")
-    @Mapping(source = "active", target = "isActive")
-    @Mapping(target = "authorities", ignore = true) // ✅ Se calcula automáticamente en UserDetails
+    @Mapping(source = "nombres", target = "firstName")
+    @Mapping(source = "apellidos", target = "lastName")
+    @Mapping(source = "correo", target = "email")
+    @Mapping(source = "telefono", target = "phone")
+    @Mapping(source = "contraseñaHash", target = "passwordHash")
+    @Mapping(source = "rol", target = "role", qualifiedByName = "rolToRole")
+    @Mapping(target = "authorities", ignore = true)
     User toUser(Usuario usuario);
 
-    // ✅ Domain → Entity (AJUSTADO A TU CLASE USER)
-    @Mapping(source = "userId", target = "id")
-    @Mapping(source = "firstName", target = "firstname")
-    @Mapping(source = "lastName", target = "lastname")
-    @Mapping(source = "email", target = "email")
-    @Mapping(source = "phone", target = "phone")
-    @Mapping(source = "username", target = "nickname")
-    @Mapping(source = "password", target = "password")
-    @Mapping(source = "userRole", target = "role")  // ✅ userRole → role
-    @Mapping(source = "position", target = "cargo")
-    @Mapping(source = "isActive", target = "active")
-    @Mapping(target = "incidencias", ignore = true)
-    @Mapping(target = "asignaciones", ignore = true)
-    @Mapping(target = "reportes", ignore = true)
-    Usuario toUsuario(User user);
+    @Named("roleToRol")
+    default Rol roleToRol(Role role) {
+        if (role == null) return null;
+
+        Rol rol = new Rol();
+        // Asignar ID basado en el enum (esto debería venir de la BD)
+        switch (role) {
+            case ADMIN -> rol.setId(1L);
+            case SUPPORT -> rol.setId(2L);
+            case TEACHER -> rol.setId(3L);
+            case STUDENT -> rol.setId(4L);
+        }
+        rol.setNombre(role.name());
+        return rol;
+    }
+
+    @Named("rolToRole")
+    default Role rolToRole(Rol rol) {
+        if (rol == null) return null;
+        return Role.valueOf(rol.getNombre());
+    }
 }

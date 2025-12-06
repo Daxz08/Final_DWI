@@ -1,146 +1,168 @@
 package pe.ucv.ucvbackend.web.controller;
 
 import pe.ucv.ucvbackend.domain.Report;
+import pe.ucv.ucvbackend.domain.Report.IncidentStatus;
+import pe.ucv.ucvbackend.domain.dto.ApiResponse;
 import pe.ucv.ucvbackend.domain.service.ReportService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/ucv")
+@RequestMapping("/api/ucv/reports")
 public class ReportController {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReportController.class);
     private final ReportService reportService;
 
     public ReportController(ReportService reportService) {
         this.reportService = reportService;
     }
 
-    @GetMapping("/reportList")
-    public ResponseEntity<List<Report>> getAllReports() {
-        logger.info("******************************************");
-        logger.info("Report list request accepted successfully.");
-        logger.info("******************************************");
+    @PostMapping
+    public ResponseEntity<ApiResponse<Report>> createReport(@Valid @RequestBody Report report) {
+        try {
+            Report createdReport = reportService.createReport(report);
+            return ResponseEntity.ok(ApiResponse.success("Reporte creado exitosamente", createdReport));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<Report>>> getAllReports() {
         try {
             List<Report> reports = reportService.getAllReports();
-            return ResponseEntity.ok(reports);
+            return ResponseEntity.ok(ApiResponse.success(reports));
         } catch (Exception e) {
-            logger.error("Error getting reports: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @GetMapping("/report/{id}")
-    public ResponseEntity<Report> getReportById(@PathVariable Long id) {
-        logger.info("******************************************");
-        logger.info("Report by ID request accepted successfully for ID: {}", id);
-        logger.info("******************************************");
+    @GetMapping("/{reportId}")
+    public ResponseEntity<ApiResponse<Report>> getReportById(@PathVariable Long reportId) {
         try {
-            return reportService.getReportById(id)
-                    .map(ResponseEntity::ok)
-                    .orElse(ResponseEntity.notFound().build());
+            Report report = reportService.getReportById(reportId)
+                    .orElseThrow(() -> new RuntimeException("Reporte no encontrado"));
+            return ResponseEntity.ok(ApiResponse.success(report));
         } catch (Exception e) {
-            logger.error("Error getting report by ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @PostMapping("/reportSave")
-    public ResponseEntity<Report> saveReport(@RequestBody Report report) {
-        logger.info("******************************************");
-        logger.info("Report save request accepted successfully.");
-        logger.info("******************************************");
+    @GetMapping("/incident/{incidentId}")
+    public ResponseEntity<ApiResponse<Report>> getReportByIncidentId(@PathVariable Long incidentId) {
         try {
-            Report savedReport = reportService.createReport(report);
-            return ResponseEntity.status(HttpStatus.CREATED).body(savedReport);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Validation error creating report: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (RuntimeException e) {
-            logger.warn("Business error creating report: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            Report report = reportService.getReportByIncidentId(incidentId)
+                    .orElseThrow(() -> new RuntimeException("Reporte no encontrado para esta incidencia"));
+            return ResponseEntity.ok(ApiResponse.success(report));
         } catch (Exception e) {
-            logger.error("Error creating report: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @PutMapping("/reportUpdate/{id}")
-    public ResponseEntity<Report> updateReport(@PathVariable Long id, @RequestBody Report report) {
-        logger.info("******************************************");
-        logger.info("Report update request accepted successfully for ID: {}", id);
-        logger.info("******************************************");
+    @GetMapping("/employee/{employeeId}")
+    public ResponseEntity<ApiResponse<List<Report>>> getReportsByEmployee(@PathVariable Long employeeId) {
         try {
-            Report updatedReport = reportService.updateReport(id, report);
-            return ResponseEntity.ok(updatedReport);
-        } catch (IllegalArgumentException e) {
-            logger.warn("Validation error updating report: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        } catch (RuntimeException e) {
-            logger.warn("Report not found for update with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.notFound().build();
+            List<Report> reports = reportService.getReportsByEmployeeId(employeeId);
+            return ResponseEntity.ok(ApiResponse.success(reports));
         } catch (Exception e) {
-            logger.error("Error updating report with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @DeleteMapping("/reportDelete/{id}")
-    public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
-        logger.info("******************************************");
-        logger.info("Report delete request accepted successfully for ID: {}", id);
-        logger.info("******************************************");
+    @GetMapping("/status/{status}")
+    public ResponseEntity<ApiResponse<List<Report>>> getReportsByStatus(@PathVariable String status) {
         try {
-            reportService.deleteReport(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            logger.warn("Report not found for deletion with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.notFound().build();
+            IncidentStatus incidentStatus = IncidentStatus.valueOf(status.toUpperCase());
+            List<Report> reports = reportService.getReportsByStatus(incidentStatus);
+            return ResponseEntity.ok(ApiResponse.success(reports));
         } catch (Exception e) {
-            logger.error("Error deleting report with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    // Endpoints adicionales para filtros - Actualizados
-    @GetMapping("/reportsByAssignStaff/{assignStaffId}")
-    public ResponseEntity<List<Report>> getReportsByAssignStaff(@PathVariable Long assignStaffId) {
-        logger.info("Getting reports by assign staff ID: {}", assignStaffId);
+    @GetMapping("/date-range")
+    public ResponseEntity<ApiResponse<List<Report>>> getReportsByDateRange(
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
         try {
-            List<Report> reports = reportService.getReportsByAssignStaffId(assignStaffId);
-            return ResponseEntity.ok(reports);
+            LocalDateTime start = LocalDateTime.parse(startDate);
+            LocalDateTime end = LocalDateTime.parse(endDate);
+            List<Report> reports = reportService.getReportsByDateRange(start, end);
+            return ResponseEntity.ok(ApiResponse.success(reports));
         } catch (Exception e) {
-            logger.error("Error getting reports by assign staff ID {}: {}", assignStaffId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @GetMapping("/reportsByUser/{userId}")
-    public ResponseEntity<List<Report>> getReportsByUser(@PathVariable Long userId) {
-        logger.info("Getting reports by user ID: {}", userId);
+    @GetMapping("/employee-status")
+    public ResponseEntity<ApiResponse<List<Report>>> getReportsByEmployeeAndStatus(
+            @RequestParam Long employeeId,
+            @RequestParam String status) {
         try {
-            List<Report> reports = reportService.getReportsByUserId(userId);
-            return ResponseEntity.ok(reports);
+            IncidentStatus incidentStatus = IncidentStatus.valueOf(status.toUpperCase());
+            List<Report> reports = reportService.getReportsByEmployeeAndStatus(employeeId, incidentStatus);
+            return ResponseEntity.ok(ApiResponse.success(reports));
         } catch (Exception e) {
-            logger.error("Error getting reports by user ID {}: {}", userId, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 
-    @GetMapping("/reportsByStatus")
-    public ResponseEntity<List<Report>> getReportsByStatus(@RequestParam String status) {
-        logger.info("Getting reports by status: {}", status);
+    @PutMapping("/{reportId}")
+    public ResponseEntity<ApiResponse<Report>> updateReport(
+            @PathVariable Long reportId,
+            @Valid @RequestBody Report report) {
         try {
-            List<Report> reports = reportService.getReportsByStatus(status);
-            return ResponseEntity.ok(reports);
+            Report updatedReport = reportService.updateReport(reportId, report);
+            return ResponseEntity.ok(ApiResponse.success("Reporte actualizado exitosamente", updatedReport));
         } catch (Exception e) {
-            logger.error("Error getting reports by status {}: {}", status, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{reportId}/status")
+    public ResponseEntity<ApiResponse<Report>> updateReportStatus(
+            @PathVariable Long reportId,
+            @RequestParam String status) {
+        try {
+            IncidentStatus incidentStatus = IncidentStatus.valueOf(status.toUpperCase());
+            Report updatedReport = reportService.updateReportStatus(reportId, incidentStatus);
+            return ResponseEntity.ok(ApiResponse.success("Estado del reporte actualizado exitosamente", updatedReport));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/{reportId}")
+    public ResponseEntity<ApiResponse<Void>> deleteReport(@PathVariable Long reportId) {
+        try {
+            reportService.deleteReport(reportId);
+            return ResponseEntity.ok(ApiResponse.success("Reporte eliminado exitosamente", null));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search/description")
+    public ResponseEntity<ApiResponse<List<Report>>> searchReportsByDescription(@RequestParam String description) {
+        try {
+            List<Report> reports = reportService.searchReportsByDescription(description);
+            return ResponseEntity.ok(ApiResponse.success(reports));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/search/actions")
+    public ResponseEntity<ApiResponse<List<Report>>> searchReportsByActions(@RequestParam String actions) {
+        try {
+            List<Report> reports = reportService.searchReportsByActions(actions);
+            return ResponseEntity.ok(ApiResponse.success(reports));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
         }
     }
 }

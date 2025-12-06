@@ -1,60 +1,50 @@
 package pe.ucv.ucvbackend.persistence.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "category")
+@Table(name = "categorias")
 public class Categoria {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "category")
-    private String category;
+    @Column(name = "nombre", length = 255)
+    private String nombre;
 
-    private String description;
+    @Column(name = "descripcion", length = 255)
+    private String descripcion;
 
-    @Column(name = "prioritylevel")
-    private String priorityLevel;
+    @Column(name = "tipo", length = 50)
+    private String tipo;
 
-    @Column(name = "registered_date")
-    private LocalDateTime registeredDate;
-
-    private String type;
-
-    // ✅ RELACIÓN JPA COMPLETA
     @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Incidencia> incidencias = new ArrayList<>();
+    private List<Incidencia> incidencias;
 
-    // Constructores
+    // Constructors
     public Categoria() {}
 
-    public Categoria(Long id, String category, String description, String priorityLevel,
-                     LocalDateTime registeredDate, String type) {
+    public Categoria(Long id, String nombre, String descripcion, String tipo) {
         this.id = id;
-        this.category = category;
-        this.description = description;
-        this.priorityLevel = priorityLevel;
-        this.registeredDate = registeredDate;
-        this.type = type;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.tipo = tipo;
     }
 
-    // Getters y Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getCategory() { return category; }
-    public void setCategory(String category) { this.category = category; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public String getPriorityLevel() { return priorityLevel; }
-    public void setPriorityLevel(String priorityLevel) { this.priorityLevel = priorityLevel; }
-    public LocalDateTime getRegisteredDate() { return registeredDate; }
-    public void setRegisteredDate(LocalDateTime registeredDate) { this.registeredDate = registeredDate; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+
+    public String getNombre() { return nombre; }
+    public void setNombre(String nombre) { this.nombre = nombre; }
+
+    public String getDescripcion() { return descripcion; }
+    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
+
+    public String getTipo() { return tipo; }
+    public void setTipo(String tipo) { this.tipo = tipo; }
+
     public List<Incidencia> getIncidencias() { return incidencias; }
     public void setIncidencias(List<Incidencia> incidencias) { this.incidencias = incidencias; }
 }

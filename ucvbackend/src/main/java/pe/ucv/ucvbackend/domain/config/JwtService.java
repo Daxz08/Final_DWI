@@ -7,9 +7,8 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import pe.ucv.ucvbackend.domain.User;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,42 +16,12 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    private static final String SECRET_KEY = "G2L/LD59exSe0V2iTk/E+iW8ZDBkkyEXJZ8ipNESTg0=";
 
-    public String generateToken(UserDetails userDetails) {
-        User user = (User) userDetails;
-
-        Map<String, Object> extraClaims = new HashMap<>();
-        extraClaims.put("userId", user.getUserId());
-        extraClaims.put("email", user.getEmail());
-        extraClaims.put("username", user.getUsername());
-        extraClaims.put("role", user.getUserRole().name());
-        extraClaims.put("firstName", user.getFirstName());
-        extraClaims.put("lastName", user.getLastName());
-        extraClaims.put("phone", user.getPhone());
-        extraClaims.put("position", user.getPosition());
-
-        return Jwts.builder()
-                .setClaims(extraClaims)
-                .setSubject(user.getEmail())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 horas
-                .signWith(getSignKey(), SignatureAlgorithm.HS256)
-                .compact();
-    }
+    private static final String SECRET_KEY = "2D4A614E645267556B58703273357638792F423F4428472B4B6250655368566D";
+    private static final long JWT_EXPIRATION = 86400000; // 24 horas
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
-    }
-
-    public Long extractUserId(String token) {
-        final Claims claims = extractAllClaims(token);
-        return claims.get("userId", Long.class);
-    }
-
-    public String extractUserRole(String token) {
-        final Claims claims = extractAllClaims(token);
-        return claims.get("role", String.class);
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
@@ -60,17 +29,18 @@ public class JwtService {
         return claimsResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSignKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+    public String generateToken(UserDetails userDetails) {
+        return generateToken(new HashMap<>(), userDetails);
     }
 
-    private Key getSignKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);
+    public String generateToken(Map<String, Object> extraClaims, UserDetails userDetails) {
+        return Jwts.builder()
+                .setClaims(extraClaims)
+                .setSubject(userDetails.getUsername())
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + JWT_EXPIRATION))
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
@@ -86,11 +56,16 @@ public class JwtService {
         return extractClaim(token, Claims::getExpiration);
     }
 
-    public String getUsername(String token) {
-        return extractUsername(token); // Delega al método actual
+    private Claims extractAllClaims(String token) {
+        return Jwts.parserBuilder()
+                .setSigningKey(getSignInKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
-    public boolean validateToken(String jwt, UserDetails userDetails) {
-        return isTokenValid(jwt, userDetails); // Delega al método actual
+    private SecretKey getSignInKey() {
+        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

@@ -1,29 +1,39 @@
 package pe.ucv.ucvbackend.domain.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class AuthResponse {
     private String token;
+    private String email;
+    private String role;
+    private Long userId;
+    private String fullName;
 
-    // Constructor vacío
-    public AuthResponse() {}
-
-    // Constructor con token
-    public AuthResponse(String token) {
+    public AuthResponse(@JsonProperty("token") String token,
+                        @JsonProperty("email") String email,
+                        @JsonProperty("role") String role,
+                        @JsonProperty("userId") Long userId,
+                        @JsonProperty("fullName") String fullName) {
         this.token = token;
+        this.email = email;
+        this.role = role;
+        this.userId = userId;
+        this.fullName = fullName;
     }
 
-    // Getters y Setters
-    public String getToken() {
-        return token;
-    }
+    // Getters and Setters
+    public String getToken() { return token; }
+    public void setToken(String token) { this.token = token; }
 
-    public void setToken(String token) {
-        this.token = token;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    // MÉTODO ESTÁTICO SIMPLE para crear instancia
-    public static AuthResponse create(String token) {
-        AuthResponse response = new AuthResponse();
-        response.setToken(token);
-        return response;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
+
+    public Long getUserId() { return userId; }
+    public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getFullName() { return fullName; }
+    public void setFullName(String fullName) { this.fullName = fullName; }
 }

@@ -5,10 +5,15 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CategoryRepository {
-    List<Category> findAll();
-    Optional<Category> findById(Long id);
     Category save(Category category);
-    void deleteById(Long id);
+    Optional<Category> findById(Long id);
+    Optional<Category> findByName(String name);
+    List<Category> findAll();
+    List<Category> findByType(String type);
+    List<Category> findByNameContaining(String name);
+    List<Category> findByDescriptionContaining(String description);
+    List<Category> findByTypeContaining(String type);
     boolean existsByName(String name);
-    boolean existsById(Long id);
+    List<Category> findByNameAndType(String name, String type);
+    void deleteById(Long id);
 }

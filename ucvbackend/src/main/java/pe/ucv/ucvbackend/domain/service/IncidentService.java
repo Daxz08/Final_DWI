@@ -1,18 +1,26 @@
 package pe.ucv.ucvbackend.domain.service;
 
 import pe.ucv.ucvbackend.domain.Incident;
+import pe.ucv.ucvbackend.domain.Incident.PriorityLevel;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
 public interface IncidentService {
-    List<Incident> getAllIncidents();
-    Optional<Incident> getIncidentById(Long id);
     Incident createIncident(Incident incident);
-    Incident updateIncident(Long id, Incident incident);
-    void deleteIncident(Long id);
-    List<Incident> getIncidentsByArea(String area);
-    List<Incident> getIncidentsByPriorityLevel(String priorityLevel);
+    Incident updateIncident(Long incidentId, Incident incident);
+    void deleteIncident(Long incidentId);
+    Optional<Incident> getIncidentById(Long incidentId);
+    List<Incident> getAllIncidents();
     List<Incident> getIncidentsByUserId(Long userId);
+    List<Incident> getIncidentsByEmployeeId(Long employeeId);
     List<Incident> getIncidentsByCategoryId(Long categoryId);
     List<Incident> getIncidentsByDepartmentId(Long departmentId);
+    List<Incident> getIncidentsByPriority(PriorityLevel priority);
+    List<Incident> getIncidentsByDateRange(LocalDate startDate, LocalDate endDate);
+    Incident assignIncidentToEmployee(Long incidentId, Long employeeId, PriorityLevel priority);
+    List<Incident> searchIncidentsByArea(String area);
+    List<Incident> searchIncidentsByDescription(String description);
+    long getIncidentCountByEmployeeAndDateRange(Long employeeId, LocalDate startDate, LocalDate endDate);
+    List<Incident> getUnassignedIncidents();
 }

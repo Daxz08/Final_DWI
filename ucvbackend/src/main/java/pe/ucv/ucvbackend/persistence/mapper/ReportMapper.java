@@ -2,44 +2,50 @@ package pe.ucv.ucvbackend.persistence.mapper;
 
 import pe.ucv.ucvbackend.domain.Report;
 import pe.ucv.ucvbackend.persistence.entity.Reporte;
-import pe.ucv.ucvbackend.persistence.entity.AsignacionPersonal;
-import pe.ucv.ucvbackend.persistence.entity.Usuario;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.Named;
 
 @Mapper(componentModel = "spring")
 public interface ReportMapper {
 
-    ReportMapper INSTANCE = Mappers.getMapper(ReportMapper.class);
-
-    // ✅ Entity → Domain (AJUSTADO A TU CLASE REPORT)
-    @Mapping(source = "id", target = "reportId")
-    @Mapping(source = "actions", target = "actions")
-    @Mapping(source = "descripcion", target = "descripcion") // ✅ descripcion → descripcion (igual en ambos)
-    @Mapping(source = "fechaResolucion", target = "resolutionDate")
-    @Mapping(source = "status", target = "status")
-    @Mapping(source = "asignacionPersonal.id", target = "assignStaffId")
-    @Mapping(source = "usuario.id", target = "userId")
-    Report toReport(Reporte reporte);
-
-    // ✅ Domain → Entity (AJUSTADO A TU CLASE REPORT)
     @Mapping(source = "reportId", target = "id")
-    @Mapping(source = "actions", target = "actions")
-    @Mapping(source = "descripcion", target = "descripcion") // ✅ descripcion → descripcion (igual en ambos)
-    @Mapping(source = "resolutionDate", target = "fechaResolucion")
-    @Mapping(source = "status", target = "status")
-    @Mapping(target = "asignacionPersonal", ignore = true)
-    @Mapping(target = "usuario", ignore = true)
+    @Mapping(source = "description", target = "descripcion")
+    @Mapping(source = "actions", target = "acciones")
+    @Mapping(source = "incidentStatus", target = "estadoIncidencia", qualifiedByName = "statusToEstado")
+    @Mapping(source = "registrationDate", target = "fechaRegistro")
+    @Mapping(source = "employeeId", target = "empleado.id")
+    @Mapping(source = "incidentId", target = "incidencia.id")
     Reporte toReporte(Report report);
 
-    // ✅ Método helper
-    default Reporte toReporteWithRelations(Report report,
-                                           AsignacionPersonal asignacionPersonal,
-                                           Usuario usuario) {
-        Reporte reporte = toReporte(report);
-        reporte.setAsignacionPersonal(asignacionPersonal);
-        reporte.setUsuario(usuario);
-        return reporte;
+    @Mapping(source = "id", target = "reportId")
+    @Mapping(source = "descripcion", target = "description")
+    @Mapping(source = "acciones", target = "actions")
+    @Mapping(source = "estadoIncidencia", target = "incidentStatus", qualifiedByName = "estadoToStatus")
+    @Mapping(source = "fechaRegistro", target = "registrationDate")
+    @Mapping(source = "empleado.id", target = "employeeId")
+    @Mapping(source = "incidencia.id", target = "incidentId")
+    Report toReport(Reporte reporte);
+
+    @Named("statusToEstado")
+    default Reporte.EstadoIncidencia statusToEstado(Report.IncidentStatus incidentStatus) {
+        if (incidentStatus == null) return Reporte.EstadoIncidencia.pendiente;
+        return switch (incidentStatus) {
+            case PENDING -> Reporte.EstadoIncidencia.pendiente;
+            case IN_PROGRESS -> Reporte.EstadoIncidencia.en_progreso;
+            case RESOLVED -> Reporte.EstadoIncidencia.resuelto;
+            case UNRESOLVED -> Reporte.EstadoIncidencia.no_resuelto;
+        };
+    }
+
+    @Named("estadoToStatus")
+    default Report.IncidentStatus estadoToStatus(Reporte.EstadoIncidencia estadoIncidencia) {
+        if (estadoIncidencia == null) return Report.IncidentStatus.PENDING;
+        return switch (estadoIncidencia) {
+            case pendiente -> Report.IncidentStatus.PENDING;
+            case en_progreso -> Report.IncidentStatus.IN_PROGRESS;
+            case resuelto -> Report.IncidentStatus.RESOLVED;
+            case no_resuelto -> Report.IncidentStatus.UNRESOLVED;
+        };
     }
 }

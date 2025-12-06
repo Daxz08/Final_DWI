@@ -1,43 +1,41 @@
 package pe.ucv.ucvbackend.domain;
 
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.Collection;
 import java.util.List;
 
 public class User implements UserDetails {
     private Long userId;
+    private String email;
     private String firstName;
     private String lastName;
-    private String email;
     private String phone;
-    private String username;
-    private String password;
-    private Role userRole;
-    private String position;
-    private Boolean isActive;
+    private String passwordHash;
+    private Role role;
+    private boolean enabled = true;
 
-    // Constructores
+    // Constructor
     public User() {}
 
-    public User(Long userId, String firstName, String lastName, String email, String phone,
-                String username, String password, Role userRole, String position, Boolean isActive) {
+    public User(Long userId, String email, String firstName, String lastName,
+                String phone, String passwordHash, Role role) {
         this.userId = userId;
+        this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
-        this.email = email;
         this.phone = phone;
-        this.username = username;
-        this.password = password;
-        this.userRole = userRole;
-        this.position = position;
-        this.isActive = isActive;
+        this.passwordHash = passwordHash;
+        this.role = role;
     }
 
-    // Getters y Setters
+    // Getters and Setters
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
@@ -45,50 +43,36 @@ public class User implements UserDetails {
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
 
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-
     public String getPhone() { return phone; }
     public void setPhone(String phone) { this.phone = phone; }
 
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
+    public String getPasswordHash() { return passwordHash; }
+    public void setPasswordHash(String passwordHash) { this.passwordHash = passwordHash; }
 
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-
-    public Role getUserRole() { return userRole; }
-    public void setUserRole(Role userRole) { this.userRole = userRole; }
-
-    public String getPosition() { return position; }
-    public void setPosition(String position) { this.position = position; }
-
-    public Boolean getIsActive() { return isActive; }
-    public void setIsActive(Boolean isActive) { this.isActive = isActive; }
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
 
     // UserDetails implementation
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return userRole != null ? userRole.getAuthorities() : List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
+    public String getPassword() { return passwordHash; }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
+    public String getUsername() { return email; }
 
     @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
+    public boolean isAccountNonExpired() { return true; }
 
     @Override
-    public boolean isEnabled() {
-        return Boolean.TRUE.equals(isActive);
-    }
+    public boolean isAccountNonLocked() { return true; }
+
+    @Override
+    public boolean isCredentialsNonExpired() { return true; }
+
+    @Override
+    public boolean isEnabled() { return enabled; }
 }

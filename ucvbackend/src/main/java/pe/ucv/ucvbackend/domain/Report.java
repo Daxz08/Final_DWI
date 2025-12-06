@@ -1,44 +1,53 @@
 package pe.ucv.ucvbackend.domain;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Report {
     private Long reportId;
+    private String description;
     private String actions;
-    private String descripcion;
-    private LocalDate resolutionDate;
-    private String status;
-    private Long assignStaffId;
-    private Long userId;
+    private IncidentStatus incidentStatus;
+    private LocalDateTime registrationDate;
+    private Long employeeId;
+    private Long incidentId;
 
-    // Constructores
-    public Report() {}
-
-    public Report(Long reportId, String actions, String descripcion, LocalDate resolutionDate,
-                  String status, Long assignStaffId, Long userId) {
-        this.reportId = reportId;
-        this.actions = actions;
-        this.descripcion = descripcion;
-        this.resolutionDate = resolutionDate;
-        this.status = status;
-        this.assignStaffId = assignStaffId;
-        this.userId = userId;
+    public enum IncidentStatus {
+        PENDING, IN_PROGRESS, RESOLVED, UNRESOLVED
     }
 
-    // Getters y Setters
+    // Constructors
+    public Report() {}
+
+    public Report(Long reportId, String description, String actions, IncidentStatus incidentStatus,
+                  LocalDateTime registrationDate, Long employeeId, Long incidentId) {
+        this.reportId = reportId;
+        this.description = description;
+        this.actions = actions;
+        this.incidentStatus = incidentStatus;
+        this.registrationDate = registrationDate;
+        this.employeeId = employeeId;
+        this.incidentId = incidentId;
+    }
+
+    // Getters and Setters
     public Long getReportId() { return reportId; }
     public void setReportId(Long reportId) { this.reportId = reportId; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
     public String getActions() { return actions; }
     public void setActions(String actions) { this.actions = actions; }
-    public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-    public LocalDate getResolutionDate() { return resolutionDate; }
-    public void setResolutionDate(LocalDate resolutionDate) { this.resolutionDate = resolutionDate; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Long getAssignStaffId() { return assignStaffId; }
-    public void setAssignStaffId(Long assignStaffId) { this.assignStaffId = assignStaffId; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+
+    public IncidentStatus getIncidentStatus() { return incidentStatus; }
+    public void setIncidentStatus(IncidentStatus incidentStatus) { this.incidentStatus = incidentStatus; }
+
+    public LocalDateTime getRegistrationDate() { return registrationDate; }
+    public void setRegistrationDate(LocalDateTime registrationDate) { this.registrationDate = registrationDate; }
+
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+
+    public Long getIncidentId() { return incidentId; }
+    public void setIncidentId(Long incidentId) { this.incidentId = incidentId; }
 }

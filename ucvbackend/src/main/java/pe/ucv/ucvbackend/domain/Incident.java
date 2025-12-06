@@ -8,52 +8,63 @@ public class Incident {
     private String area;
     private String description;
     private LocalDate incidentDate;
-    private String priorityLevel;
-    private LocalDateTime registeredDate;
-    private String registeredUser;
-
-    // Relaciones
+    private LocalDateTime registrationDate;
+    private Long userId;
     private Long categoryId;
     private Long departmentId;
-    private Long userId;
+    private Long employeeId;
+    private PriorityLevel priorityLevel;
 
-    // Constructores
+    public enum PriorityLevel {
+        LOW, MEDIUM, HIGH
+    }
+
+    // Constructors
     public Incident() {}
 
     public Incident(Long incidentId, String area, String description, LocalDate incidentDate,
-                    String priorityLevel, LocalDateTime registeredDate, String registeredUser,
-                    Long categoryId, Long departmentId, Long userId) {
+                    LocalDateTime registrationDate, Long userId, Long categoryId,
+                    Long departmentId, Long employeeId, PriorityLevel priorityLevel) {
         this.incidentId = incidentId;
         this.area = area;
         this.description = description;
         this.incidentDate = incidentDate;
-        this.priorityLevel = priorityLevel;
-        this.registeredDate = registeredDate;
-        this.registeredUser = registeredUser;
+        this.registrationDate = registrationDate;
+        this.userId = userId;
         this.categoryId = categoryId;
         this.departmentId = departmentId;
-        this.userId = userId;
+        this.employeeId = employeeId;
+        this.priorityLevel = priorityLevel;
     }
 
-    // Getters y Setters
+    // Getters and Setters
     public Long getIncidentId() { return incidentId; }
     public void setIncidentId(Long incidentId) { this.incidentId = incidentId; }
+
     public String getArea() { return area; }
     public void setArea(String area) { this.area = area; }
+
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
     public LocalDate getIncidentDate() { return incidentDate; }
     public void setIncidentDate(LocalDate incidentDate) { this.incidentDate = incidentDate; }
-    public String getPriorityLevel() { return priorityLevel; }
-    public void setPriorityLevel(String priorityLevel) { this.priorityLevel = priorityLevel; }
-    public LocalDateTime getRegisteredDate() { return registeredDate; }
-    public void setRegisteredDate(LocalDateTime registeredDate) { this.registeredDate = registeredDate; }
-    public String getRegisteredUser() { return registeredUser; }
-    public void setRegisteredUser(String registeredUser) { this.registeredUser = registeredUser; }
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
-    public Long getDepartmentId() { return departmentId; }
-    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public LocalDateTime getRegistrationDate() { return registrationDate; }
+    public void setRegistrationDate(LocalDateTime registrationDate) { this.registrationDate = registrationDate; }
+
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
+
+    public Long getCategoryId() { return categoryId; }
+    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+
+    public Long getDepartmentId() { return departmentId; }
+    public void setDepartmentId(Long departmentId) { this.departmentId = departmentId; }
+
+    public Long getEmployeeId() { return employeeId; }
+    public void setEmployeeId(Long employeeId) { this.employeeId = employeeId; }
+
+    public PriorityLevel getPriorityLevel() { return priorityLevel; }
+    public void setPriorityLevel(PriorityLevel priorityLevel) { this.priorityLevel = priorityLevel; }
 }

@@ -1,11 +1,14 @@
 package pe.ucv.ucvbackend.domain.service;
 
-import pe.ucv.ucvbackend.domain.dto.AuthResponse;
-import pe.ucv.ucvbackend.domain.dto.AuthenticationRequest;
-import pe.ucv.ucvbackend.domain.dto.ChangePasswordRequest;
-import pe.ucv.ucvbackend.domain.dto.RegisterRequest;
+import pe.ucv.ucvbackend.domain.User;
+import pe.ucv.ucvbackend.domain.Employee;
 
 public interface AuthService {
-    AuthResponse register(RegisterRequest request);
-    AuthResponse authenticate(AuthenticationRequest request);
-    AuthResponse changePassword(ChangePasswordRequest request);}
+    User registerUser(User user);
+    Employee registerEmployee(Employee employee);
+    String authenticateUser(String email, String password);
+    String authenticateEmployee(String email, String password);
+    boolean validateToken(String token);
+    User getCurrentUser(String token);
+    Employee getCurrentEmployee(String token);
+}

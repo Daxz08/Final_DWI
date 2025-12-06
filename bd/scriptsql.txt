@@ -1,0 +1,95 @@
+CREATE DATABASE IF NOT EXISTS `ucvincidencia`;
+USE `ucvincidencia`;
+
+-- Tabla de roles
+CREATE TABLE IF NOT EXISTS roles (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(50) NOT NULL,
+    descripcion VARCHAR(255),
+    CONSTRAINT PRIMARY KEY (id)
+);
+
+-- Tabla de usuarios (estudiantes/docentes)
+CREATE TABLE IF NOT EXISTS usuarios (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    nombres VARCHAR(100),
+    apellidos VARCHAR(100),
+    telefono VARCHAR(20),
+    contraseña_hash VARCHAR(255) NOT NULL,
+    rol_id BIGINT NOT NULL,
+    CONSTRAINT PRIMARY KEY (id),
+    CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES roles(id)
+);
+
+-- Tabla de empleados (admins/soporte)
+CREATE TABLE IF NOT EXISTS empleados (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(100) NOT NULL,
+    apellidos VARCHAR(100) NOT NULL,
+    telefono VARCHAR(20),
+    correo VARCHAR(150) UNIQUE NOT NULL,
+    contraseña_hash VARCHAR(255) NOT NULL,
+    rol_id BIGINT NOT NULL,
+    estado_disponibilidad ENUM('disponible','ocupado') DEFAULT 'disponible',
+    especialidad VARCHAR(100),
+    fecha_contratacion DATE,
+    incidencias_activas INT DEFAULT 0,
+    CONSTRAINT PRIMARY KEY (id),
+    CONSTRAINT fk_empleado_rol FOREIGN KEY (rol_id) REFERENCES roles(id)
+);
+
+-- Tabla de departamentos
+CREATE TABLE IF NOT EXISTS departamentos (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(255),
+    codigo VARCHAR(50),
+    piso VARCHAR(50),
+    aula VARCHAR(50),
+    torre VARCHAR(50),
+    CONSTRAINT PRIMARY KEY (id)
+);
+
+-- Tabla de categorias
+CREATE TABLE IF NOT EXISTS categorias (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    nombre VARCHAR(255),
+    descripcion VARCHAR(255),
+    tipo VARCHAR(50),
+    CONSTRAINT PRIMARY KEY (id)
+);
+
+-- Tabla de incidencias
+CREATE TABLE IF NOT EXISTS incidencias (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    area VARCHAR(255),
+    descripcion VARCHAR(255),
+    fecha_incidencia DATE,
+    fecha_registro DATETIME,
+    usuario_id BIGINT,
+    categoria_id BIGINT,
+    departamento_id BIGINT,
+    empleado_id BIGINT,
+    nivel_prioridad ENUM('baja','media','alta') DEFAULT 'media',
+    CONSTRAINT PRIMARY KEY (id),
+    CONSTRAINT fk_incidencia_usuario FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
+    CONSTRAINT fk_incidencia_categoria FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+    CONSTRAINT fk_incidencia_departamento FOREIGN KEY (departamento_id) REFERENCES departamentos(id),
+    CONSTRAINT fk_incidencia_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id)
+);
+
+-- Tabla de reportes
+CREATE TABLE IF NOT EXISTS reportes (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    descripcion VARCHAR(255),
+    acciones VARCHAR(255),
+    estado_incidencia ENUM('pendiente','en progreso','resuelto','no resuelto'),
+    fecha_registro DATETIME,
+    empleado_id BIGINT,
+    incidencia_id BIGINT,
+    CONSTRAINT PRIMARY KEY (id),
+    CONSTRAINT fk_reporte_empleado FOREIGN KEY (empleado_id) REFERENCES empleados(id),
+    CONSTRAINT fk_reporte_incidencia FOREIGN KEY (incidencia_id) REFERENCES incidencias(id)
+);
+
+COMMIT;

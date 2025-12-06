@@ -1,83 +1,73 @@
 package pe.ucv.ucvbackend.persistence.entity;
 
 import jakarta.persistence.*;
-import pe.ucv.ucvbackend.domain.Role;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "usuarios")
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String firstname;
-    private String lastname;
-    private String email;
-    private String phone;
-    private String nickname;
-    private String password;
+    @Column(name = "correo", unique = true, nullable = false, length = 150)
+    private String correo;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(name = "nombres", length = 100)
+    private String nombres;
 
-    private String cargo;
-    private Boolean active;
+    @Column(name = "apellidos", length = 100)
+    private String apellidos;
 
-    // ✅ RELACIONES JPA CORREGIDAS
+    @Column(name = "telefono", length = 20)
+    private String telefono;
+
+    @Column(name = "contraseña_hash", nullable = false, length = 255)
+    private String contraseñaHash;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "rol_id", nullable = false)
+    private Rol rol;
+
     @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Incidencia> incidencias = new ArrayList<>();
+    private List<Incidencia> incidencias;
 
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<AsignacionPersonal> asignaciones = new ArrayList<>();
-
-    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Reporte> reportes = new ArrayList<>();
-
-    // Constructores
+    // Constructors
     public Usuario() {}
 
-    public Usuario(Long id, String firstname, String lastname, String email, String phone,
-                   String nickname, String password, Role role, String cargo, Boolean active) {
+    public Usuario(Long id, String correo, String nombres, String apellidos,
+                   String telefono, String contraseñaHash, Rol rol) {
         this.id = id;
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.email = email;
-        this.phone = phone;
-        this.nickname = nickname;
-        this.password = password;
-        this.role = role;
-        this.cargo = cargo;
-        this.active = active;
+        this.correo = correo;
+        this.nombres = nombres;
+        this.apellidos = apellidos;
+        this.telefono = telefono;
+        this.contraseñaHash = contraseñaHash;
+        this.rol = rol;
     }
 
-    // Getters y Setters
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getFirstname() { return firstname; }
-    public void setFirstname(String firstname) { this.firstname = firstname; }
-    public String getLastname() { return lastname; }
-    public void setLastname(String lastname) { this.lastname = lastname; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getPhone() { return phone; }
-    public void setPhone(String phone) { this.phone = phone; }
-    public String getNickname() { return nickname; }
-    public void setNickname(String nickname) { this.nickname = nickname; }
-    public String getPassword() { return password; }
-    public void setPassword(String password) { this.password = password; }
-    public Role getRole() { return role; }
-    public void setRole(Role role) { this.role = role; }
-    public String getCargo() { return cargo; }
-    public void setCargo(String cargo) { this.cargo = cargo; }
-    public Boolean getActive() { return active; }
-    public void setActive(Boolean active) { this.active = active; }
+
+    public String getCorreo() { return correo; }
+    public void setCorreo(String correo) { this.correo = correo; }
+
+    public String getNombres() { return nombres; }
+    public void setNombres(String nombres) { this.nombres = nombres; }
+
+    public String getApellidos() { return apellidos; }
+    public void setApellidos(String apellidos) { this.apellidos = apellidos; }
+
+    public String getTelefono() { return telefono; }
+    public void setTelefono(String telefono) { this.telefono = telefono; }
+
+    public String getContraseñaHash() { return contraseñaHash; }
+    public void setContraseñaHash(String contraseñaHash) { this.contraseñaHash = contraseñaHash; }
+
+    public Rol getRol() { return rol; }
+    public void setRol(Rol rol) { this.rol = rol; }
+
     public List<Incidencia> getIncidencias() { return incidencias; }
     public void setIncidencias(List<Incidencia> incidencias) { this.incidencias = incidencias; }
-    public List<AsignacionPersonal> getAsignaciones() { return asignaciones; }
-    public void setAsignaciones(List<AsignacionPersonal> asignaciones) { this.asignaciones = asignaciones; }
-    public List<Reporte> getReportes() { return reportes; }
-    public void setReportes(List<Reporte> reportes) { this.reportes = reportes; }
 }

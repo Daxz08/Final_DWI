@@ -1,58 +1,73 @@
 package pe.ucv.ucvbackend.persistence.entity;
 
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "report")
+@Table(name = "reportes")
 public class Reporte {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String actions;
+    @Column(name = "descripcion", length = 255)
     private String descripcion;
 
-    @Column(name = "resolution_date")
-    private LocalDate fechaResolucion;
+    @Column(name = "acciones", length = 255)
+    private String acciones;
 
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_incidencia")
+    private EstadoIncidencia estadoIncidencia;
 
-    // ✅ RELACIONES JPA (REEMPLAZAN LOS IDs)
+    @Column(name = "fecha_registro")
+    private LocalDateTime fechaRegistro;
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assign_staff_id")
-    private AsignacionPersonal asignacionPersonal;
+    @JoinColumn(name = "empleado_id")
+    private Empleado empleado;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private Usuario usuario;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "incidencia_id")
+    private Incidencia incidencia;
 
-    // Constructores
-    public Reporte() {}
-
-    public Reporte(Long id, String actions, String descripcion, LocalDate fechaResolucion, String status) {
-        this.id = id;
-        this.actions = actions;
-        this.descripcion = descripcion;
-        this.fechaResolucion = fechaResolucion;
-        this.status = status;
+    public enum EstadoIncidencia {
+        pendiente, en_progreso, resuelto, no_resuelto
     }
 
-    // Getters y Setters
+    // Constructors
+    public Reporte() {}
+
+    public Reporte(Long id, String descripcion, String acciones, EstadoIncidencia estadoIncidencia,
+                   LocalDateTime fechaRegistro, Empleado empleado, Incidencia incidencia) {
+        this.id = id;
+        this.descripcion = descripcion;
+        this.acciones = acciones;
+        this.estadoIncidencia = estadoIncidencia;
+        this.fechaRegistro = fechaRegistro;
+        this.empleado = empleado;
+        this.incidencia = incidencia;
+    }
+
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-    public String getActions() { return actions; }
-    public void setActions(String actions) { this.actions = actions; }
+
     public String getDescripcion() { return descripcion; }
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
-    public LocalDate getFechaResolucion() { return fechaResolucion; }
-    public void setFechaResolucion(LocalDate fechaResolucion) { this.fechaResolucion = fechaResolucion; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
 
-    // ✅ NUEVOS GETTERS/SETTERS PARA RELACIONES
-    public AsignacionPersonal getAsignacionPersonal() { return asignacionPersonal; }
-    public void setAsignacionPersonal(AsignacionPersonal asignacionPersonal) { this.asignacionPersonal = asignacionPersonal; }
-    public Usuario getUsuario() { return usuario; }
-    public void setUsuario(Usuario usuario) { this.usuario = usuario; }
+    public String getAcciones() { return acciones; }
+    public void setAcciones(String acciones) { this.acciones = acciones; }
+
+    public EstadoIncidencia getEstadoIncidencia() { return estadoIncidencia; }
+    public void setEstadoIncidencia(EstadoIncidencia estadoIncidencia) { this.estadoIncidencia = estadoIncidencia; }
+
+    public LocalDateTime getFechaRegistro() { return fechaRegistro; }
+    public void setFechaRegistro(LocalDateTime fechaRegistro) { this.fechaRegistro = fechaRegistro; }
+
+    public Empleado getEmpleado() { return empleado; }
+    public void setEmpleado(Empleado empleado) { this.empleado = empleado; }
+
+    public Incidencia getIncidencia() { return incidencia; }
+    public void setIncidencia(Incidencia incidencia) { this.incidencia = incidencia; }
 }

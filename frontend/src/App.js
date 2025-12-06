@@ -1,75 +1,177 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import ProtectedRoute from "./components/common/ProtectedRoute";
-import AdminLayout from "./components/layout/AdminLayout";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Layout from './components/layout/Layout';
 
-// Importar páginas - SIN extensiones
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import DashboardPage from "./pages/DashboardPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import DepartmentsPage from "./pages/DepartmentsPage";
-import IncidentsPage from "./pages/IncidentsPage";
-import ChangePasswordPage from "./pages/ChangePasswordPage";
+// Páginas
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import StudentDashboard from './pages/dashboard/StudentDashboard';
+import TeacherDashboard from './pages/dashboard/TeacherDashboard';
+import SupportDashboard from './pages/dashboard/SupportDashboard';
+import AdminDashboard from './pages/dashboard/AdminDashboard';
+import ReportIncident from './pages/incidents/ReportIncident';
+import IncidentList from './pages/incidents/IncidentList';
+import EmployeeManagement from './pages/management/EmployeeManagement';
+import UserManagement from './pages/management/UserManagement';
+import DepartmentCategoryManagement from './pages/management/DepartmentCategoryManagement';
+import AdminIncidentManagement from './pages/management/AdminIncidentManagement';
+
+// Componente de ruta protegida
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen">Cargando...</div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/unauthorized" />;
+  }
+  
+  return <Layout>{children}</Layout>;
+};
+
+// Componente de ruta pública (solo para no autenticados)
+const PublicRoute = ({ children }) => {
+  const { user } = useAuth();
+  return !user ? children : <Navigate to="/dashboard" />;
+};
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Rutas Públicas */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/change-password" element={<ChangePasswordPage />} />  
-        {/* Rutas Protegidas */}
-        <Route
-          path="/"  
-          element={
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Rutas públicas */}
+          <Route path="/login" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          <Route path="/register" element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          } />
+
+          {/* Rutas protegidas por rol */}
+          <Route path="/dashboard" element={
             <ProtectedRoute>
-              <AdminLayout>
-                <DashboardPage />
-              </AdminLayout>
+              <DashboardRouter />
             </ProtectedRoute>
-          }
-        />
+          } />
 
-        <Route
-          path="/categories"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <CategoriesPage />
-              </AdminLayout>
+          <Route path="/student/*" element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentDashboard />
             </ProtectedRoute>
-          }
-        />
+          } />
 
-        <Route
-          path="/departments"
-          element={
-            <ProtectedRoute>
-              <AdminLayout>
-                <DepartmentsPage />
-              </AdminLayout>
+          {/* Rutas para estudiantes */}
+          <Route path="/student/report" element={
+           <ProtectedRoute allowedRoles={['STUDENT']}>
+            <ReportIncident />
+          </ProtectedRoute>
+          } />
+
+          <Route path="/student/incidents" element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <IncidentList />
+          </ProtectedRoute>
+          } />
+
+          <Route path="/teacher/*" element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <TeacherDashboard />
             </ProtectedRoute>
-          }
-        />
+          } />
 
-        <Route path="/category" element={<Navigate to="/categories" replace />} />
+          {/* Rutas para docentes */}
+          <Route path="/teacher/report" element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <ReportIncident />
+            </ProtectedRoute>
+          } />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      <Route
-  path="/incidents"
-  element={
-    <ProtectedRoute>
-      <AdminLayout>
-        <IncidentsPage />
-      </AdminLayout>
-    </ProtectedRoute>
-  }
-/>
-      
-      </Routes>
-    </Router>
+          <Route path="/teacher/incidents" element={
+            <ProtectedRoute allowedRoles={['TEACHER']}>
+              <IncidentList />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/support/*" element={
+            <ProtectedRoute allowedRoles={['SUPPORT']}>
+              <SupportDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas para soporte */}
+          <Route path="/support/incidents" element={
+            <ProtectedRoute allowedRoles={['SUPPORT']}>
+              <IncidentList />
+            </ProtectedRoute>
+          } />  
+
+          <Route path="/admin/*" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          {/* Rutas para administradores */}
+          <Route path="/admin/employees" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <EmployeeManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/admin/users" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <UserManagement />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/admin/departments-categories" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <DepartmentCategoryManagement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/incidents" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminIncidentManagement />
+            </ProtectedRoute>
+          } />
+
+          {/* Ruta por defecto */}
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
+
+// Componente para redirigir al dashboard correcto según el rol
+const DashboardRouter = () => {
+  const { user } = useAuth();
+  
+  switch (user?.role) {
+    case 'STUDENT':
+      return <Navigate to="/student" />;
+    case 'TEACHER':
+      return <Navigate to="/teacher" />;
+    case 'SUPPORT':
+      return <Navigate to="/support" />;
+    case 'ADMIN':
+      return <Navigate to="/admin" />;
+    default:
+      return <Navigate to="/login" />;
+  }
+};
 
 export default App;
