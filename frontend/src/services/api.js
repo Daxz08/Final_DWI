@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080/api/ucv';
+const API_BASE_URL = 'https://final-dwi-1.onrender.com/api/ucv';
 
 // Crear instancia de axios
 const api = axios.create({
