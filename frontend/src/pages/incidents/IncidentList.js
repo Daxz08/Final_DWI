@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { incidentService, employeeService } from '../../services/api';
+import { incidentService, employeeService, reportService } from '../../services/api';
 import { Link } from 'react-router-dom';
+import api from '../../services/api';
 
 const IncidentList = () => {
   const { user } = useAuth();
@@ -21,83 +22,157 @@ const IncidentList = () => {
 
   const fetchData = async () => {
   try {
-    console.log('🔍 Iniciando carga de datos...');
-    
-    // Cargar incidencias
-    const incidentsRes = await incidentService.getAll();
-    console.log('📥 Respuesta de incidencias:', incidentsRes);
+    setLoading(true);
+    console.log('🔍 [IncidentList] Iniciando carga...');
+    console.log('👤 Rol del usuario:', user.role);
+    console.log('🆔 ID del empleado:', user.employeeId);
     
     let incidentsData = [];
-    if (incidentsRes.data) {
-      if (incidentsRes.data.success && incidentsRes.data.data) {
-        incidentsData = incidentsRes.data.data;
-      } else if (Array.isArray(incidentsRes.data)) {
-        incidentsData = incidentsRes.data;
-      } else if (incidentsRes.data.data && Array.isArray(incidentsRes.data.data)) {
-        incidentsData = incidentsRes.data.data;
-      }
-    }
-    
-    console.log('📊 Incidencias cargadas:', incidentsData);
-    setIncidents(incidentsData);
+    let employeesData = [];
 
-    // Solo cargar empleados si es admin/support
-    if (user.role === 'ADMIN' || user.role === 'SUPPORT') {
-      const employeesRes = await employeeService.getAvailable();
-      console.log('📥 Respuesta de empleados:', employeesRes);
+    // 🔥 LÓGICA CORREGIDA SEGÚN ROL DEL USUARIO
+    if (user.role === 'STUDENT' || user.role === 'TEACHER') {
+      // Para estudiantes y docentes: SOLO sus incidencias
+      console.log(`📋 Cargando incidencias del usuario ${user.userId}...`);
+      const response = await incidentService.getByUser(user.userId);
+      incidentsData = response.data || [];
       
-      let employeesData = [];
-      if (employeesRes.data) {
-        if (employeesRes.data.success && employeesRes.data.data) {
-          employeesData = employeesRes.data.data;
-        } else if (Array.isArray(employeesRes.data)) {
-          employeesData = employeesRes.data;
-        } else if (employeesRes.data.data && Array.isArray(employeesRes.data.data)) {
-          employeesData = employeesRes.data.data;
+    } else if (user.role === 'SUPPORT') {
+      // 🔥 CORRECCIÓN: Usar getByEmployee en lugar de getAssignedToEmployee
+      console.log(`👷 Cargando incidencias del empleado ${user.employeeId}...`);
+      try {
+        const response = await incidentService.getByEmployee(user.employeeId);
+        incidentsData = response.data || [];
+      } catch (employeeError) {
+        console.error('❌ Error obteniendo incidencias por empleado:', employeeError);
+        
+        // Fallback: obtener todas y filtrar
+        try {
+          const allResponse = await incidentService.getAll();
+          if (allResponse.success) {
+            incidentsData = (allResponse.data || []).filter(incident => 
+              incident.employeeId === user.employeeId
+            );
+          }
+        } catch (fallbackError) {
+          console.error('❌ Fallback también falló:', fallbackError);
         }
       }
       
-      console.log('👥 Empleados cargados:', employeesData);
-      setEmployees(employeesData);
+    } else if (user.role === 'ADMIN') {
+      // Para admin: TODAS las incidencias
+      console.log('📋 Cargando TODAS las incidencias...');
+      const response = await incidentService.getAll();
+      incidentsData = response.data || [];
     }
-  } catch (error) {
-    console.error('❌ Error fetching data:', error);
-    console.error('📝 Detalles del error:', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
-    });
+
+    // 🔥 PASO CRÍTICO: Obtener reportes para cada incidencia
+    if (incidentsData.length > 0) {
+      console.log('📊 Obteniendo reportes para las incidencias...');
+      
+      try {
+        const reportsResponse = await reportService.getAll();
+        if (reportsResponse.success) {
+          const allReports = reportsResponse.data || [];
+          
+          // Crear mapa de reportes por incidentId
+          const reportsMap = {};
+          allReports.forEach(report => {
+            if (report.incidentId) {
+              reportsMap[report.incidentId] = report;
+            }
+          });
+          
+          // Combinar incidencias con sus reportes
+          incidentsData = incidentsData.map(incident => ({
+            ...incident,
+            report: reportsMap[incident.incidentId] || null,
+            // Si hay reporte, usar el estado del reporte
+            status: reportsMap[incident.incidentId] 
+              ? reportsMap[incident.incidentId].incidentStatus 
+              : (incident.employeeId ? 'IN_PROGRESS' : 'PENDING')
+          }));
+        }
+      } catch (reportError) {
+        console.error('❌ Error obteniendo reportes:', reportError);
+        // Si falla, mantener la lógica original
+        incidentsData = incidentsData.map(incident => ({
+          ...incident,
+          status: incident.employeeId 
+            ? (incident.report ? 'RESOLVED' : 'IN_PROGRESS') 
+            : 'PENDING'
+        }));
+      }
+    }
+
+    // 🔥 Cargar empleados solo para ADMIN/SUPPORT
+    if (user.role === 'ADMIN' || user.role === 'SUPPORT') {
+      try {
+        const response = await employeeService.getAvailable();
+        if (response.success) {
+          employeesData = response.data || [];
+        }
+      } catch (employeeError) {
+        console.error('❌ Error cargando empleados:', employeeError);
+      }
+    }
+
+    console.log(`✅ ${incidentsData.length} incidencias cargadas con estado actualizado`);
+    console.log('📊 Muestra de incidencias:', incidentsData.slice(0, 3));
     
-    alert('Error al cargar los datos. Verifica la consola para más detalles.');
+    setIncidents(incidentsData);
+    setEmployees(employeesData);
+
+  } catch (error) {
+    console.error('❌ [IncidentList] Error general:', error);
+    alert(`Error al cargar los datos: ${error.message || 'Error desconocido'}`);
   } finally {
     setLoading(false);
   }
 };
 
   const getStatusBadge = (incident) => {
-    if (!incident.employeeId) {
-      return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pendiente</span>;
+    // 🔥 LÓGICA ACTUALIZADA: Usar el estado del reporte si existe
+    const status = incident.status || 
+                  (incident.report ? incident.report.incidentStatus : null);
+    
+    // Si no hay estado definido, usar la lógica anterior
+    if (!status) {
+      if (!incident.employeeId) {
+        return <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">Pendiente</span>;
+      }
+      if (incident.employeeId && !incident.report) {
+        return <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">En Progreso</span>;
+      }
+      return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Resuelta</span>;
     }
-    if (incident.employeeId && !incident.report) {
-      return <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">En Progreso</span>;
-    }
-    return <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Resuelta</span>;
+
+    // 🔥 USAR EL ESTADO DEL REPORTE
+    const statusMap = {
+      'PENDING': { color: 'bg-yellow-100 text-yellow-800', text: 'Pendiente' },
+      'IN_PROGRESS': { color: 'bg-blue-100 text-blue-800', text: 'En Progreso' },
+      'RESOLVED': { color: 'bg-green-100 text-green-800', text: 'Resuelta' },
+      'UNRESOLVED': { color: 'bg-red-100 text-red-800', text: 'No Resuelta' },
+      'CLOSED': { color: 'bg-gray-100 text-gray-800', text: 'Cerrada' }
+    };
+
+    const statusInfo = statusMap[status] || statusMap.PENDING;
+    return <span className={`${statusInfo.color} px-2 py-1 rounded-full text-xs`}>{statusInfo.text}</span>;
   };
 
   const getPriorityBadge = (priority) => {
-  // 🔥 CORRECCIÓN DEFINITIVA: Verificar si es null, undefined o string vacío
-  if (priority === null || priority === undefined || priority === 'null' || priority === '') {
-    return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">Sin asignar</span>;
-  }
-  
-  const priorities = {
-    'LOW': { color: 'bg-green-100 text-green-800', text: 'Baja' },
-    'MEDIUM': { color: 'bg-yellow-100 text-yellow-800', text: 'Media' },
-    'HIGH': { color: 'bg-red-100 text-red-800', text: 'Alta' }
+    if (priority === null || priority === undefined || priority === 'null' || priority === '') {
+      return <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs">Sin asignar</span>;
+    }
+    
+    const priorities = {
+      'LOW': { color: 'bg-green-100 text-green-800', text: 'Baja' },
+      'MEDIUM': { color: 'bg-yellow-100 text-yellow-800', text: 'Media' },
+      'HIGH': { color: 'bg-red-100 text-red-800', text: 'Alta' }
+    };
+    const priorityInfo = priorities[priority] || { color: 'bg-gray-100 text-gray-800', text: 'Sin asignar' };
+    return <span className={`${priorityInfo.color} px-2 py-1 rounded-full text-xs`}>{priorityInfo.text}</span>;
   };
-  const priorityInfo = priorities[priority] || { color: 'bg-gray-100 text-gray-800', text: 'Sin asignar' };
-  return <span className={`${priorityInfo.color} px-2 py-1 rounded-full text-xs`}>{priorityInfo.text}</span>;
-};
 
   const handleAssignClick = (incident) => {
     setSelectedIncident(incident);
@@ -153,6 +228,11 @@ const IncidentList = () => {
                       <h3 className="font-semibold text-ucv-blue">{incident.area}</h3>
                       {getPriorityBadge(incident.priorityLevel)}
                       {getStatusBadge(incident)}
+                      {incident.report && (
+                        <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
+                          Con Reporte
+                        </span>
+                      )}
                     </div>
                     
                     <p className="text-gray-600 text-sm mb-2">{incident.description}</p>
@@ -160,10 +240,15 @@ const IncidentList = () => {
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                       <span>Fecha: {new Date(incident.incidentDate).toLocaleDateString()}</span>
                       {incident.userId && (
-                        <span>Reportado por usuario: {incident.userId}</span>
+                        <span>Reportado por: {incident.userId}</span>
                       )}
                       {incident.employeeId && (
-                        <span>Asignado a empleado: {incident.employeeId}</span>
+                        <span>Asignado a: {incident.employeeId}</span>
+                      )}
+                      {incident.report && (
+                        <span className="text-green-600">
+                          Estado: {incident.report.incidentStatus || 'Sin estado'}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -178,11 +263,11 @@ const IncidentList = () => {
                       </button>
                     )}
                     <Link
-                      to={`/incidents/${incident.incidentId}`}
-                      className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-300 transition-colors"
-                    >
-                      Ver Detalle
-                    </Link>
+  to={`/${user.role.toLowerCase()}/incidents/${incident.incidentId}`}
+  className="bg-gray-200 text-gray-700 px-3 py-1 rounded text-xs hover:bg-gray-300 transition-colors"
+>
+  Ver Detalle
+</Link>
                   </div>
                 </div>
               </div>

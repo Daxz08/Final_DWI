@@ -11,4 +11,6 @@ public interface AuthService {
     boolean validateToken(String token);
     User getCurrentUser(String token);
     Employee getCurrentEmployee(String token);
+    boolean resetUserPassword(String email, String currentPassword, String newPassword);
+    boolean resetEmployeePassword(String email, String currentPassword, String newPassword);
 }

@@ -2,17 +2,15 @@ package pe.ucv.ucvbackend.domain.service.impl;
 
 import pe.ucv.ucvbackend.domain.Incident;
 import pe.ucv.ucvbackend.domain.Incident.PriorityLevel;
+import pe.ucv.ucvbackend.domain.Report;
 import pe.ucv.ucvbackend.domain.service.IncidentService;
 import pe.ucv.ucvbackend.domain.repository.IncidentRepository;
 import pe.ucv.ucvbackend.domain.repository.UserRepository;
 import pe.ucv.ucvbackend.domain.repository.EmployeeRepository;
 import pe.ucv.ucvbackend.domain.repository.CategoryRepository;
 import pe.ucv.ucvbackend.domain.repository.DepartmentRepository;
-import pe.ucv.ucvbackend.persistence.entity.Incidencia;
-import pe.ucv.ucvbackend.persistence.entity.Usuario;
-import pe.ucv.ucvbackend.persistence.entity.Categoria;
-import pe.ucv.ucvbackend.persistence.entity.Departamento;
-import pe.ucv.ucvbackend.persistence.entity.Empleado;
+import pe.ucv.ucvbackend.persistence.entity.*;
+import pe.ucv.ucvbackend.persistence.mapper.ReportMapper;
 import pe.ucv.ucvbackend.persistence.repository.IncidenciaJpaRepository;
 import pe.ucv.ucvbackend.persistence.repository.UsuarioJpaRepository;
 import pe.ucv.ucvbackend.persistence.repository.CategoriaJpaRepository;
@@ -26,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -45,6 +44,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final EmpleadoJpaRepository empleadoJpaRepository;
 
     private final IncidentMapper incidentMapper;
+    private final ReportMapper reportMapper;
 
     public IncidentServiceImpl(IncidentRepository incidentRepository,
                                UserRepository userRepository,
@@ -56,7 +56,8 @@ public class IncidentServiceImpl implements IncidentService {
                                CategoriaJpaRepository categoriaJpaRepository,
                                DepartamentoJpaRepository departamentoJpaRepository,
                                EmpleadoJpaRepository empleadoJpaRepository,
-                               IncidentMapper incidentMapper) {
+                               IncidentMapper incidentMapper,
+                               ReportMapper reportMapper) {
         this.incidentRepository = incidentRepository;
         this.userRepository = userRepository;
         this.employeeRepository = employeeRepository;
@@ -68,6 +69,7 @@ public class IncidentServiceImpl implements IncidentService {
         this.departamentoJpaRepository = departamentoJpaRepository;
         this.empleadoJpaRepository = empleadoJpaRepository;
         this.incidentMapper = incidentMapper;
+        this.reportMapper = reportMapper;
     }
 
     @Override
@@ -164,6 +166,18 @@ public class IncidentServiceImpl implements IncidentService {
             throw new RuntimeException("Incidencia no encontrada con ID: " + incidentId);
         }
         incidenciaJpaRepository.deleteById(incidentId);
+    }
+
+    @Override
+    public List<Incident> getIncidentsByUserWithReports(Long userId) {
+        return incidenciaJpaRepository.findByUsuarioId(userId)
+                .stream()
+                .map(incidencia -> {
+                    Incident incident = incidentMapper.toIncident(incidencia);
+                    // Para incluir información del reporte, necesitarías crear un DTO especial
+                    return incident;
+                })
+                .collect(Collectors.toList()); // Cambiar .toList() por .collect(Collectors.toList())
     }
 
     @Override
@@ -279,6 +293,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .toList();
     }
 
+
     // Método auxiliar para convertir PriorityLevel a NivelPrioridad
     private Incidencia.NivelPrioridad convertPriorityToNivel(PriorityLevel priorityLevel) {
         if (priorityLevel == null) return Incidencia.NivelPrioridad.media;
@@ -288,4 +303,24 @@ public class IncidentServiceImpl implements IncidentService {
             case HIGH -> Incidencia.NivelPrioridad.alta;
         };
     }
-}
+    @Override
+    public List<Incident> getIncidentsWithReports() {
+        return incidenciaJpaRepository.findAll()
+                .stream()
+                .filter(incidencia -> incidencia.getReporte() != null)
+                .map(incidencia -> {
+                    Incident incident = incidentMapper.toIncident(incidencia);
+                    // Si necesitas incluir información del reporte, crea un DTO
+                    return incident;
+                })
+                .collect(Collectors.toList()); // Cambiar .toList() por .collect(Collectors.toList())
+    }
+
+    @Override
+    public List<Incident> getIncidentsWithoutReports() {
+        return incidenciaJpaRepository.findAll()
+                .stream()
+                .filter(incidencia -> incidencia.getReporte() == null)
+                .map(incidentMapper::toIncident)
+                .collect(Collectors.toList()); // Cambiar .toList() por .collect(Collectors.toList())
+    }}

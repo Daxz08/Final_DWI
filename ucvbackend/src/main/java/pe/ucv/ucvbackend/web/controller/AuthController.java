@@ -1,13 +1,11 @@
 package pe.ucv.ucvbackend.web.controller;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import pe.ucv.ucvbackend.domain.User;
 import pe.ucv.ucvbackend.domain.Employee;
 import pe.ucv.ucvbackend.domain.Role;
-import pe.ucv.ucvbackend.domain.dto.ApiResponse;
-import pe.ucv.ucvbackend.domain.dto.AuthResponse;
-import pe.ucv.ucvbackend.domain.dto.AuthenticationRequest;
-import pe.ucv.ucvbackend.domain.dto.RegisterRequest;
-import pe.ucv.ucvbackend.domain.dto.EmployeeRegistrationRequest;
+import pe.ucv.ucvbackend.domain.dto.*;
 import pe.ucv.ucvbackend.domain.service.AuthService;
 import pe.ucv.ucvbackend.domain.service.UserService;
 import pe.ucv.ucvbackend.domain.service.EmployeeService;
@@ -150,5 +148,68 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.ok(ApiResponse.error("Token inválido"));
         }
+    }
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            boolean success;
+
+            // Determinar si es usuario o empleado
+            if (request.getIsEmployee()) {
+                success = authService.resetEmployeePassword(
+                        request.getEmail(),
+                        request.getCurrentPassword(),
+                        request.getNewPassword()
+                );
+            } else {
+                success = authService.resetUserPassword(
+                        request.getEmail(),
+                        request.getCurrentPassword(),
+                        request.getNewPassword()
+                );
+            }
+
+            if (success) {
+                return ResponseEntity.ok(ApiResponse.success("Contraseña cambiada exitosamente", null));
+            } else {
+                return ResponseEntity.badRequest().body(ApiResponse.error("No se pudo cambiar la contraseña"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    // Clase interna para el DTO de reset password
+    public static class ResetPasswordRequest {
+        @NotBlank
+        private String email;
+
+        @NotBlank
+        private String currentPassword;
+
+        @NotBlank
+        @Size(min = 6)
+        private String newPassword;
+
+        @NotBlank
+        private String confirmPassword;
+
+        private boolean isEmployee;
+
+        // Getters y Setters
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+
+        public String getCurrentPassword() { return currentPassword; }
+        public void setCurrentPassword(String currentPassword) { this.currentPassword = currentPassword; }
+
+        public String getNewPassword() { return newPassword; }
+        public void setNewPassword(String newPassword) { this.newPassword = newPassword; }
+
+        public String getConfirmPassword() { return confirmPassword; }
+        public void setConfirmPassword(String confirmPassword) { this.confirmPassword = confirmPassword; }
+
+        public boolean getIsEmployee() { return isEmployee; }
+        public void setIsEmployee(boolean isEmployee) { this.isEmployee = isEmployee; }
     }
 }

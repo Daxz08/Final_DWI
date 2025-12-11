@@ -16,10 +16,12 @@ const Sidebar = () => {
     return roles[role] || role;
   };
 
+  // ACTUALIZAR studentMenu - línea 25 aproximadamente
   const studentMenu = [
     { name: 'Dashboard', path: '/student', icon: '📊' },
     { name: 'Reportar Incidencia', path: '/student/report', icon: '📝' },
     { name: 'Mis Incidencias', path: '/student/incidents', icon: '📋' },
+    { name: 'Reportes', path: '/student/reports', icon: '📄' }, // 🔥 NUEVO
   ];
 
   const teacherMenu = [
@@ -28,11 +30,13 @@ const Sidebar = () => {
     { name: 'Mis Incidencias', path: '/teacher/incidents', icon: '📋' },
   ];
 
+  // ACTUALIZAR supportMenu - línea 32 aproximadamente
   const supportMenu = [
     { name: 'Dashboard', path: '/support', icon: '📊' },
     { name: 'Incidencias Asignadas', path: '/support/assigned', icon: '📋' },
-    { name: 'Todas las Incidencias', path: '/support/incidents', icon: '📑' },
-    { name: 'Generar Reportes', path: '/support/reports', icon: '📄' },
+    { name: 'Generar Reportes', path: '/support/generate-reports', icon: '📝' }, // 🔥 NUEVO
+    { name: 'Mis Reportes', path: '/support/my-reports', icon: '📄' }, // 🔥 NUEVO
+    // ELIMINAR "Todas las Incidencias"
   ];
 
   const adminMenu = [

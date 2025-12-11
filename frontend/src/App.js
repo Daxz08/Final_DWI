@@ -16,6 +16,13 @@ import EmployeeManagement from './pages/management/EmployeeManagement';
 import UserManagement from './pages/management/UserManagement';
 import DepartmentCategoryManagement from './pages/management/DepartmentCategoryManagement';
 import AdminIncidentManagement from './pages/management/AdminIncidentManagement';
+import StudentReports from './pages/reports/StudentReports';
+import SupportGenerateReports from './pages/reports/SupportGenerateReports';
+import AdminReports from './pages/reports/AdminReports';
+import MyReports from './pages/MyReports';
+import AssignedIncidents from './pages/support/AssignedIncidents';
+import IncidentDetail from './pages/incidents/IncidentDetail';
+
 
 // Componente de ruta protegida
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
@@ -60,6 +67,7 @@ function App() {
           } />
 
           {/* Rutas protegidas por rol */}
+          
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <DashboardRouter />
@@ -73,16 +81,29 @@ function App() {
           } />
 
           {/* Rutas para estudiantes */}
+
           <Route path="/student/report" element={
-           <ProtectedRoute allowedRoles={['STUDENT']}>
-            <ReportIncident />
-          </ProtectedRoute>
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <ReportIncident />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/student/reports" element={
+            <ProtectedRoute allowedRoles={['STUDENT']}>
+              <StudentReports />
+            </ProtectedRoute>
           } />
 
           <Route path="/student/incidents" element={
             <ProtectedRoute allowedRoles={['STUDENT']}>
               <IncidentList />
           </ProtectedRoute>
+          } />
+
+          <Route path="/student/incidents/:incidentId" element={
+            <ProtectedRoute allowedRoles={['STUDENT', 'TEACHER', 'SUPPORT', 'ADMIN']}>
+              <IncidentDetail />
+            </ProtectedRoute>
           } />
 
           <Route path="/teacher/*" element={
@@ -123,6 +144,24 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/support/generate-reports" element={
+            <ProtectedRoute allowedRoles={['SUPPORT']}>
+              <SupportGenerateReports />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/support/my-reports" element={
+            <ProtectedRoute allowedRoles={['SUPPORT']}>
+              <MyReports /> {/* Ya deberías tener este componente */}
+            </ProtectedRoute>
+          } />
+
+          <Route path="/support/assigned" element={
+            <ProtectedRoute allowedRoles={['SUPPORT']}>
+              <AssignedIncidents /> {/* Ya deberías tener este componente */}
+            </ProtectedRoute>
+          } />
+
           {/* Rutas para administradores */}
           <Route path="/admin/employees" element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
@@ -145,6 +184,12 @@ function App() {
           <Route path="/admin/incidents" element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
               <AdminIncidentManagement />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/reports" element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminReports />
             </ProtectedRoute>
           } />
 

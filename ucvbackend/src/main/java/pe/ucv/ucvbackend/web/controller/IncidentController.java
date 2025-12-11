@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/ucv/incidents")
@@ -158,6 +159,16 @@ public class IncidentController {
     public ResponseEntity<ApiResponse<List<Incident>>> searchIncidentsByDescription(@RequestParam String description) {
         try {
             List<Incident> incidents = incidentService.searchIncidentsByDescription(description);
+            return ResponseEntity.ok(ApiResponse.success(incidents));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+
+    @GetMapping("/assigned/{employeeId}")
+    public ResponseEntity<ApiResponse<List<Incident>>> getAssignedIncidents(@PathVariable Long employeeId) {
+        try {
+            List<Incident> incidents = incidentService.getIncidentsByEmployeeId(employeeId);
             return ResponseEntity.ok(ApiResponse.success(incidents));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

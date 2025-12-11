@@ -68,52 +68,102 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password, isEmployee = false) => {
-    try {
-      console.log(`🔐 [AuthContext] Login attempt: ${email}, employee: ${isEmployee}`);
+// context/AuthContext.js - Añade esto al login
+const login = async (email, password, isEmployee) => {
+  try {
+    console.log('🔐 [AuthContext] Intentando login:', { email, isEmployee });
+    
+    let response;
+    
+    // 🔥 CORRECCIÓN: Usar isEmployee (booleano) en lugar de role
+    if (isEmployee) {
+      console.log('👷 [AuthContext] Login como empleado');
+      response = await authService.loginEmployee({ email, password });
+    } else {
+      console.log('👤 [AuthContext] Login como usuario regular');
+      response = await authService.loginUser({ email, password });
+    }
+    
+    console.log('📥 [AuthContext] Respuesta del servidor:', response.data);
+    
+    if (response.data.success) {
+      const userData = response.data.data;
       
-      const response = isEmployee 
-        ? await authService.loginEmployee({ email, password })
-        : await authService.loginUser({ email, password });
-
-      console.log('📥 [AuthContext] Respuesta login:', response.data);
-
-      if (response.data.success) {
-        const { token, ...userData } = response.data.data;
+      console.log('👤 [AuthContext] Datos del usuario recibidos:', userData);
+      
+      // 🔥 CORRECCIÓN CRÍTICA: Normalizar estructura del usuario
+      const normalizedUser = {
+        // Preservar todos los datos originales
+        ...userData,
         
-        // 🔥 CORRECCIÓN: Normalizar datos del usuario
-        const normalizedUser = {
-          ...userData,
-          userId: userData.userId || userData.id,
-          employeeId: userData.employeeId,
-          id: userData.userId || userData.id || userData.employeeId,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: userData.role
-        };
+        // Asegurar campos consistentes
+        userId: userData.userId || userData.id || userData.employeeId,
+        employeeId: userData.employeeId || userData.id,
+        id: userData.userId || userData.id || userData.employeeId,
         
+        // Información personal
+        firstName: userData.firstName || userData.nombre || '',
+        lastName: userData.lastName || userData.apellidos || '',
+        fullName: userData.fullName || `${userData.firstName || ''} ${userData.lastName || ''}`.trim(),
+        
+        // Credenciales
+        email: userData.email,
+        role: userData.role,
+        
+        // Token (si viene separado)
+        token: userData.token || response.data.token
+      };
+      
+      console.log('✅ [AuthContext] Usuario normalizado:', normalizedUser);
+      
+      // Guardar en localStorage
+      localStorage.setItem('userData', JSON.stringify(normalizedUser));
+      
+      // Guardar token (si viene en data o en root)
+      const token = normalizedUser.token || response.data.token;
+      if (token) {
         localStorage.setItem('authToken', token);
-        localStorage.setItem('userData', JSON.stringify(normalizedUser));
-        setUser(normalizedUser);
-        
-        console.log('✅ [AuthContext] Login exitoso:', normalizedUser);
-        return { success: true };
       } else {
-        console.warn('⚠️ [AuthContext] Login fallido:', response.data.message);
-        return { 
-          success: false, 
-          error: response.data.message || 'Error en el login' 
-        };
+        console.warn('⚠️ [AuthContext] No se recibió token en la respuesta');
       }
-    } catch (error) {
-      console.error('❌ [AuthContext] Error en login:', error);
+      
+      setUser(normalizedUser);
+      return { success: true };
+    } else {
+      console.error('❌ [AuthContext] Respuesta no exitosa:', response.data.message);
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Error de conexión' 
+        error: response.data.message || 'Error en el servidor' 
       };
     }
-  };
-
+  } catch (error) {
+    console.error('❌ [AuthContext] Error en login:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    // Mensajes de error más específicos
+    let errorMessage = 'Error de conexión';
+    
+    if (error.response?.status === 400) {
+      errorMessage = error.response?.data?.message || 'Credenciales incorrectas';
+    } else if (error.response?.status === 404) {
+      errorMessage = 'Usuario no encontrado';
+    } else if (error.response?.status === 401) {
+      errorMessage = 'No autorizado. Verifica tus credenciales.';
+    } else if (error.message.includes('Network Error')) {
+      errorMessage = 'Error de red. Verifica tu conexión.';
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    return { 
+      success: false, 
+      error: errorMessage 
+    };
+  }
+};
   // 🔥 AGREGADO: Función register que faltaba
   const register = async (userData) => {
     try {
@@ -131,7 +181,7 @@ export const AuthProvider = ({ children }) => {
           firstName: userInfo.firstName,
           lastName: userInfo.lastName,
           role: userInfo.role
-        };
+        };  
         
         localStorage.setItem('authToken', token);
         localStorage.setItem('userData', JSON.stringify(normalizedUser));

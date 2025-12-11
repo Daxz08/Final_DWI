@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface IncidentService {
+    // ... métodos existentes ...
+
     Incident createIncident(Incident incident);
     Incident updateIncident(Long incidentId, Incident incident);
     void deleteIncident(Long incidentId);
@@ -23,4 +25,9 @@ public interface IncidentService {
     List<Incident> searchIncidentsByDescription(String description);
     long getIncidentCountByEmployeeAndDateRange(Long employeeId, LocalDate startDate, LocalDate endDate);
     List<Incident> getUnassignedIncidents();
+
+    // 🔥 NUEVOS MÉTODOS PARA REPORTES
+    List<Incident> getIncidentsWithReports();
+    List<Incident> getIncidentsWithoutReports();
+    List<Incident> getIncidentsByUserWithReports(Long userId);
 }

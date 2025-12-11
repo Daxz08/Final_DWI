@@ -28,7 +28,7 @@ public class Reporte {
     private Empleado empleado;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "incidencia_id")
+    @JoinColumn(name = "incidencia_id", unique = true, nullable = false) // 🔥 UNIQUE y NOT NULL
     private Incidencia incidencia;
 
     public enum EstadoIncidencia {

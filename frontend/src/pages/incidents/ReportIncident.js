@@ -21,23 +21,42 @@ const ReportIncident = () => {
     fetchFormData();
   }, []);
 
-  const fetchFormData = async () => {
-    try {
-      const [categoriesRes, departmentsRes] = await Promise.all([
-        categoryService.getAll(),
-        departmentService.getAll()
-      ]);
+const fetchFormData = async () => {
+  try {
+    console.log('🔍 [ReportIncident] Cargando datos del formulario...');
 
-      if (categoriesRes.data.success) {
-        setCategories(categoriesRes.data.data);
-      }
-      if (departmentsRes.data.success) {
-        setDepartments(departmentsRes.data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching form data:', error);
+    const [categoriesRes, departmentsRes] = await Promise.all([
+      categoryService.getAll(),
+      departmentService.getAll()
+    ]);
+
+    console.log('📥 [ReportIncident] Respuestas:', {
+      categories: categoriesRes,
+      departments: departmentsRes
+    });
+
+    // 🔥 USAR processApiResponse que ya está en los servicios
+    if (categoriesRes.success) {
+      setCategories(categoriesRes.data || []);
+      console.log(`✅ [ReportIncident] ${categoriesRes.data?.length} categorías cargadas`);
+    } else {
+      console.error('❌ [ReportIncident] Error en categorías:', categoriesRes.message);
+      alert('Error al cargar categorías: ' + categoriesRes.message);
     }
-  };
+
+    if (departmentsRes.success) {
+      setDepartments(departmentsRes.data || []);
+      console.log(`✅ [ReportIncident] ${departmentsRes.data?.length} departamentos cargados`);
+    } else {
+      console.error('❌ [ReportIncident] Error en departamentos:', departmentsRes.message);
+      alert('Error al cargar departamentos: ' + departmentsRes.message);
+    }
+
+  } catch (error) {
+    console.error('❌ [ReportIncident] Error inesperado:', error);
+    alert('Error al cargar datos del formulario');
+  }
+};
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -47,56 +66,49 @@ const ReportIncident = () => {
     }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
+  // CORREGIR handleSubmit - línea 91 aproximadamente
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
 
-    try {
-      // 🔥 CORREGIDO: Estructura de datos corregida
-      const incidentData = {
-        area: formData.area,
-        description: formData.description,
-        incidentDate: formData.incidentDate, // ✅ Ahora sí se envía
-        userId: user.userId || user.id,
-        categoryId: formData.categoryId,
-        departmentId: formData.departmentId
-        // 🔥 IMPORTANTE: NO enviar priorityLevel - lo asignará el admin después
-      };
+  try {
+    // 🔥 VERIFICAR que todos los campos requeridos estén presentes
+    const incidentData = {
+      area: formData.area,
+      description: formData.description,
+      incidentDate: formData.incidentDate,
+      userId: user.userId || user.id,
+      categoryId: formData.categoryId ? parseInt(formData.categoryId) : null,
+      departmentId: formData.departmentId ? parseInt(formData.departmentId) : null,
+      // NO enviar priorityLevel - lo asigna el admin después
+    };
 
-      // 🔥 NUEVO: Console.log para debuggear
-      console.log('📤 DATOS A ENVIAR AL BACKEND:', incidentData);
-      console.log('📋 Campos específicos:');
-      console.log('  - area:', incidentData.area);
-      console.log('  - description:', incidentData.description);
-      console.log('  - incidentDate:', incidentData.incidentDate);
-      console.log('  - userId:', incidentData.userId);
-      console.log('  - categoryId:', incidentData.categoryId);
-      console.log('  - departmentId:', incidentData.departmentId);
+    console.log('📤 DATOS A ENVIAR (VERIFICADOS):', incidentData);
 
-      const response = await incidentService.create(incidentData);
+    const response = await incidentService.create(incidentData);
+    
+    if (response.success) {
+      alert('✅ Incidencia reportada exitosamente');
+      navigate('/student'); // Redirigir al dashboard del estudiante
+    } else {
+      // 🔥 MEJOR MANEJO DE ERRORES
+      console.error('❌ Error del servidor:', response);
       
-      // 🔥 NUEVO: Debuggear la respuesta
-      console.log('📥 RESPUESTA DEL BACKEND:', response.data);
-      
-      if (response.data.success) {
-        alert('Incidencia reportada exitosamente');
-        navigate('/dashboard');
+      if (response.data && typeof response.data === 'object') {
+        // Mostrar errores de validación específicos
+        const errors = Object.values(response.data).join(', ');
+        alert(`❌ Error de validación: ${errors}`);
       } else {
-        console.error('❌ Error en la respuesta del backend:', response.data);
-        alert('Error en la respuesta del servidor');
+        alert(`❌ Error: ${response.message}`);
       }
-    } catch (error) {
-      console.error('❌ Error reportando incidencia:', error);
-      console.error('📝 Detalles del error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      alert('Error al reportar la incidencia: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('❌ Error de red:', error);
+    alert('❌ Error de conexión con el servidor');
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="max-w-2xl mx-auto">

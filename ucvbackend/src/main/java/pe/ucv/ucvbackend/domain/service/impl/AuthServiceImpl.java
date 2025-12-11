@@ -49,12 +49,17 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("El correo ya está registrado");
         }
 
-        // 🔥 CORRECCIÓN: Validar y hashear la contraseña correctamente
-        if (employee.getPasswordHash() == null || employee.getPasswordHash().trim().isEmpty()) {
+        // 🔥 CORRECCIÓN CRÍTICA: El employee viene del mapper con passwordHash = password (texto plano)
+        // Necesitamos hashear la contraseña que viene en passwordHash
+        String plainPassword = employee.getPasswordHash(); // En realidad es la contraseña en texto plano
+
+        if (plainPassword == null || plainPassword.trim().isEmpty()) {
             throw new RuntimeException("La contraseña es obligatoria");
         }
 
-        employee.setPasswordHash(passwordEncoder.encode(employee.getPasswordHash()));
+        // Hashear la contraseña
+        String hashedPassword = passwordEncoder.encode(plainPassword);
+        employee.setPasswordHash(hashedPassword);
 
         // Asignar rol por defecto si no viene especificado
         if (employee.getRole() == null) {
@@ -119,5 +124,57 @@ public class AuthServiceImpl implements AuthService {
         String email = jwtService.extractUsername(token);
         return employeeRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+    }
+
+    @Override
+    public boolean resetUserPassword(String email, String currentPassword, String newPassword) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            throw new RuntimeException("Usuario no encontrado");
+        }
+
+        User user = userOpt.get();
+
+        // Verificar contraseña actual
+        if (!passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Verificar que la nueva contraseña sea diferente
+        if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
+        }
+
+        // Actualizar contraseña
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        return true;
+    }
+
+    @Override
+    public boolean resetEmployeePassword(String email, String currentPassword, String newPassword) {
+        Optional<Employee> employeeOpt = employeeRepository.findByEmail(email);
+
+        if (employeeOpt.isEmpty()) {
+            throw new RuntimeException("Empleado no encontrado");
+        }
+
+        Employee employee = employeeOpt.get();
+
+        // Verificar contraseña actual
+        if (!passwordEncoder.matches(currentPassword, employee.getPasswordHash())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+
+        // Verificar que la nueva contraseña sea diferente
+        if (passwordEncoder.matches(newPassword, employee.getPasswordHash())) {
+            throw new RuntimeException("La nueva contraseña debe ser diferente a la actual");
+        }
+
+        // Actualizar contraseña
+        employee.setPasswordHash(passwordEncoder.encode(newPassword));
+        employeeRepository.save(employee);
+        return true;
     }
 }

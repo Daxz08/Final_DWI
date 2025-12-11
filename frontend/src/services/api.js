@@ -164,7 +164,32 @@ export const incidentService = {
       console.error(`❌ [IncidentService] Error asignando incidencia:`, error);
       return { success: false, data: null, message: error.response?.data?.message || 'Error del servidor' };
     }
-  }
+  },
+  
+    getByEmployee: async (employeeId) => {
+    try {
+      console.log(`🔍 [IncidentService] Obteniendo incidencias del empleado ${employeeId}...`);
+      const response = await api.get(`/incidents/employee/${employeeId}`);
+      console.log(`📥 [IncidentService] Respuesta para empleado ${employeeId}:`, response.data);
+      return processApiResponse(response, `GET_EMPLOYEE_INCIDENTS_${employeeId}`);
+    } catch (error) {
+      console.error(`❌ [IncidentService] Error obteniendo incidencias del empleado ${employeeId}:`, error);
+      return { success: false, data: [], message: error.response?.data?.message || 'Error del servidor' };
+    }
+  },
+  
+  getAssignedToEmployee: async (employeeId) => {
+    try {
+      console.log(`🔍 [IncidentService] Obteniendo incidencias asignadas al empleado ${employeeId}...`);
+      const response = await api.get(`/incidents/assigned/${employeeId}`);
+      return processApiResponse(response, `GET_ASSIGNED_INCIDENTS_${employeeId}`);
+    } catch (error) {
+      console.error(`❌ [IncidentService] Error en endpoint /assigned, intentando /employee:`, error);
+      // Fallback al endpoint /employee
+      return incidentService.getByEmployee(employeeId);
+    }
+  },
+  
 };
 
 // 🔥 NUEVO: Servicios de empleados con procesamiento consistente
@@ -286,8 +311,46 @@ export const departmentService = {
       return { success: false, data: [], message: error.response?.data?.message || 'Error del servidor' };
     }
   },
-  create: (data) => api.post('/departments', data),
-  deleteDepartment: (id) => api.delete(`/departments/${id}`)
+// AGREGAR al departmentService (después de getAll):
+
+create: async (data) => {
+  try {
+    console.log('📤 [DepartmentService] Creando departamento:', data);
+    const response = await api.post('/departments', data);
+
+    // 🔥 VERIFICAR estructura de respuesta
+    console.log('📥 [DepartmentService] Respuesta:', response.data);
+
+    if (response.data && response.data.success !== undefined) {
+      return response.data; // Ya tiene estructura {success, data, message}
+    }
+
+    // Si no tiene estructura estándar, procesar
+    return processApiResponse(response, 'CREATE_DEPARTMENT');
+  } catch (error) {
+    console.error('❌ [DepartmentService] Error creando departamento:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Error del servidor',
+      data: null
+    };
+  }
+},
+
+deleteDepartment: async (id) => {
+  try {
+    console.log(`🗑️ [DepartmentService] Eliminando departamento ${id}`);
+    const response = await api.delete(`/departments/${id}`);
+    return processApiResponse(response, `DELETE_DEPARTMENT_${id}`);
+  } catch (error) {
+    console.error(`❌ [DepartmentService] Error eliminando departamento ${id}:`, error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Error del servidor',
+      data: null
+    };
+  }
+}
 };
 
 export const categoryService = {
@@ -306,6 +369,54 @@ export const categoryService = {
 
 // 🔥 AGREGAR: Servicio de reportes
 export const reportService = {
+  getAll: async () => {
+    try {
+      console.log('🔍 [ReportService] Obteniendo TODOS los reportes...');
+      const response = await api.get('/reports');
+      
+      // 🔥 VERIFICACIÓN EXHAUSTIVA
+      console.log('📥 [ReportService] Respuesta completa:', {
+        status: response.status,
+        data: response.data,
+        estructura: typeof response.data
+      });
+      
+      // Múltiples estructuras posibles
+      if (response.data && response.data.success !== undefined) {
+        // Caso 1: { success: true, data: [...], message: ... }
+        return response.data;
+      } else if (Array.isArray(response.data)) {
+        // Caso 2: Array directo
+        return { success: true, data: response.data, message: 'Éxito' };
+      } else if (response.data && Array.isArray(response.data.data)) {
+        // Caso 3: { data: [...] }
+        return { success: true, data: response.data.data, message: 'Éxito' };
+      } else {
+        console.warn('⚠️ [ReportService] Estructura no reconocida');
+        return { success: false, data: [], message: 'Estructura no válida' };
+      }
+    } catch (error) {
+      console.error('❌ [ReportService] Error crítico:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      
+      // Intentar fallback con endpoint alternativo
+      try {
+        console.log('🔄 Intentando fallback con endpoint directo...');
+        const fallback = await axios.get('http://localhost:8080/api/ucv/reports');
+        return { success: true, data: fallback.data, message: 'Fallback exitoso' };
+      } catch (fallbackError) {
+        return { 
+          success: false, 
+          data: [], 
+          message: `Error: ${error.message} | Fallback: ${fallbackError.message}` 
+        };
+      }
+    }
+  },
+
   create: async (data) => {
     try {
       console.log('📤 [ReportService] Creando reporte:', data);
@@ -315,7 +426,72 @@ export const reportService = {
       console.error('❌ [ReportService] Error creando reporte:', error);
       return { success: false, data: null, message: error.response?.data?.message || 'Error del servidor' };
     }
-  }
+  },
+
+  // 🔥 MÉTODO CORREGIDO: Solo una versión de getByEmployee
+  getByEmployee: async (employeeId) => {
+    try {
+      console.log(`🔍 [ReportService] Obteniendo reportes del empleado ${employeeId}`);
+      
+      // Intentar primero con el endpoint estándar
+      try {
+        const response = await api.get(`/reports/employee/${employeeId}`);
+        console.log(`✅ [ReportService] Reportes obtenidos del endpoint /employee/${employeeId}`);
+        return processApiResponse(response, `GET_REPORTS_BY_EMPLOYEE_${employeeId}`);
+      } catch (endpointError) {
+        console.warn(`⚠️ [ReportService] Endpoint /employee/${employeeId} falló, intentando /reports/employee/${employeeId}/all`);
+        
+        // Intentar con endpoint alternativo
+        const response = await api.get(`/reports/employee/${employeeId}/all`);
+        return processApiResponse(response, `GET_REPORTS_BY_EMPLOYEE_ALT_${employeeId}`);
+      }
+    } catch (error) {
+      console.error(`❌ [ReportService] Error obteniendo reportes del empleado ${employeeId}:`, error);
+      
+      // Fallback: obtener todos y filtrar
+      try {
+        console.log('🔄 [ReportService] Usando fallback: obtener todos y filtrar...');
+        const allResponse = await api.get('/reports');
+        let allReports = [];
+        
+        // Procesar diferentes estructuras de respuesta
+        if (Array.isArray(allResponse.data)) {
+          allReports = allResponse.data;
+        } else if (allResponse.data && Array.isArray(allResponse.data.data)) {
+          allReports = allResponse.data.data;
+        } else if (allResponse.data && allResponse.data.success && Array.isArray(allResponse.data.data)) {
+          allReports = allResponse.data.data;
+        }
+        
+        const filtered = allReports.filter(report => 
+          report.employeeId == employeeId || 
+          report.employee?.employeeId == employeeId ||
+          report.employee?.id == employeeId
+        );
+        
+        return { 
+          success: true, 
+          data: filtered, 
+          message: 'Reportes obtenidos mediante filtrado' 
+        };
+      } catch (fallbackError) {
+        console.error('❌ [ReportService] Fallback también falló:', fallbackError);
+      }
+      
+      return { success: false, data: [], message: error.message };
+    }
+  },
+
+  getByIncidentId: async (incidentId) => {
+    try {
+      console.log(`🔍 [ReportService] Obteniendo reporte para incidencia ${incidentId}`);
+      const response = await api.get(`/reports/incident/${incidentId}`);
+      return processApiResponse(response, `GET_REPORT_BY_INCIDENT_${incidentId}`);
+    } catch (error) {
+      console.error(`❌ [ReportService] Error obteniendo reporte para incidencia ${incidentId}:`, error);
+      return { success: false, data: null, message: error.response?.data?.message || 'Error del servidor' };
+    }
+  },
 };
 
 

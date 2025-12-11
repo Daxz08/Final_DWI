@@ -46,6 +46,21 @@ public class Incidencia {
     @OneToOne(mappedBy = "incidencia", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Reporte reporte;
 
+    // 🔥 NUEVO: Método helper para verificar si tiene reporte
+    public boolean tieneReporte() {
+        return this.reporte != null;
+    }
+
+    // 🔥 NUEVO: Método para actualizar estado desde reporte
+    public void actualizarDesdeReporte(Reporte reporte) {
+        this.reporte = reporte;
+        if (reporte != null) {
+            // Si el reporte marca como resuelto, la incidencia está terminada
+            if (reporte.getEstadoIncidencia() == Reporte.EstadoIncidencia.resuelto) {
+                // Puedes agregar lógica adicional aquí
+            }
+        }
+    }
     public enum NivelPrioridad {
         baja, media, alta
     }
