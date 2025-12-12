@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 @Transactional
@@ -17,20 +18,31 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     private final EmployeeRepository employeeRepository;
     private final IncidentRepository incidentRepository;
+    private final PasswordEncoder passwordEncoder;
+
 
     public EmployeeServiceImpl(EmployeeRepository employeeRepository,
-                               IncidentRepository incidentRepository) {
+                               IncidentRepository incidentRepository,
+                               PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.incidentRepository = incidentRepository;
+        this.passwordEncoder = passwordEncoder;
+
     }
+
 
     @Override
     public Employee createEmployee(Employee employee) {
+
         if (employeeRepository.existsByEmail(employee.getEmail())) {
             throw new RuntimeException("El correo ya está registrado: " + employee.getEmail());
         }
 
-        // Establecer valores por defecto
+        // ENCRIPTAR CONTRASEÑA AQUÍ
+        String encryptedPassword = passwordEncoder.encode(employee.getPasswordHash());
+        employee.setPasswordHash(encryptedPassword);
+
+        // Valores por defecto
         if (employee.getActiveIncidents() == null) {
             employee.setActiveIncidents(0);
         }
@@ -41,26 +53,34 @@ public class EmployeeServiceImpl implements EmployeeService {
         return employeeRepository.save(employee);
     }
 
+
     @Override
     public Employee updateEmployee(Long employeeId, Employee employee) {
         Employee existingEmployee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new RuntimeException("Empleado no encontrado con ID: " + employeeId));
 
-        // Actualizar campos permitidos
         existingEmployee.setFirstName(employee.getFirstName());
         existingEmployee.setLastName(employee.getLastName());
         existingEmployee.setPhone(employee.getPhone());
         existingEmployee.setSpecialty(employee.getSpecialty());
 
-        // Solo actualizar email si es diferente y no existe otro empleado con ese email
+        // Validar email
         if (!existingEmployee.getEmail().equals(employee.getEmail()) &&
                 employeeRepository.existsByEmail(employee.getEmail())) {
             throw new RuntimeException("El correo ya está en uso: " + employee.getEmail());
         }
         existingEmployee.setEmail(employee.getEmail());
 
+        // ✔ ENCRIPTAR SI SE MANDA NUEVA CONTRASEÑA
+        if (employee.getPasswordHash() != null && !employee.getPasswordHash().isBlank()) {
+            String encrypted = passwordEncoder.encode(employee.getPasswordHash());
+            existingEmployee.setPasswordHash(encrypted);
+        }
+
         return employeeRepository.save(existingEmployee);
     }
+
+
 
     @Override
     public void deleteEmployee(Long employeeId) {
