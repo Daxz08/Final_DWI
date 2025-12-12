@@ -71,7 +71,7 @@ const Login = () => {
     }
 
     try {
-      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+      const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'https://final-dwi-1.onrender.com';
       const response = await fetch(`${API_BASE_URL}/api/ucv/auth/reset-password`, {
         method: 'POST',
         headers: {
